@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Kian · 会 Q 弹的交互大头照</title>
+<style>
+  :root{
+    --bg1:#fef6ef; --bg2:#eef4ff; --ink:#2b2b3a; --sub:#8a8aa0;
+    --card:#ffffff; --line:#eee7f5; --accent:#ff5c7a; --accent2:#6c7bff;
+    --mint:#bff0d6; --shadow:0 20px 60px rgba(80,70,120,.14);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%}
+  body{
+    font-family:"PingFang SC","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(900px 600px at 12% 8%, #ffe7ec55, transparent 60%),
+      radial-gradient(900px 700px at 88% 92%, #d9e4ff66, transparent 60%),
+      linear-gradient(135deg,var(--bg1),var(--bg2));
+    min-height:100%;
+    display:flex;flex-direction:column;align-items:center;
+    padding:26px 16px 60px;
+  }
+  .wrap{width:min(960px,100%)}
+  header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+  .logo{
+    width:38px;height:38px;border-radius:12px;display:grid;place-items:center;font-size:20px;
+    background:linear-gradient(135deg,#ff8fa6,#ffc37a);box-shadow:0 8px 20px #ff8fa655;
+  }
+  h1{font-size:19px;margin:0;letter-spacing:.5px}
+  h1 small{display:block;font-size:11px;font-weight:500;color:var(--sub);letter-spacing:1.5px;margin-top:2px}
+  .pill{margin-left:auto;font-size:11px;color:#7a6aa0;background:#f2ecff;border:1px solid #e6dbff;
+    padding:6px 12px;border-radius:999px;white-space:nowrap}
+  .stage{
+    position:relative;background:var(--card);border:1px solid var(--line);border-radius:28px;
+    box-shadow:var(--shadow);overflow:hidden;
+    display:grid;grid-template-columns:1fr 300px;gap:0;
+  }
+  @media(max-width:760px){.stage{grid-template-columns:1fr}}
+  .canvasZone{
+    position:relative;aspect-ratio:1/1;min-height:360px;
+    background:
+      radial-gradient(80% 70% at 50% 42%, #fff 0%, #fdf7ff 55%, #f3f0ff 100%);
+    display:grid;place-items:center;touch-action:none;overflow:hidden;
+  }
+  .canvasZone::before{
+    content:"";position:absolute;inset:0;
+    background-image:radial-gradient(#c9b8e8 1px, transparent 1px);
+    background-size:26px 26px;opacity:.28;pointer-events:none;
+  }
+  #gl{
+    position:relative;width:min(88%,560px);height:auto;aspect-ratio:1/1;
+    display:block;cursor:grab;touch-action:none;z-index:2;
+    filter:drop-shadow(0 22px 26px rgba(90,60,120,.18));
+  }
+  #gl.grabbing{cursor:grabbing}
+  .sticker{
+    position:absolute;z-index:3;font-size:11px;font-weight:700;letter-spacing:.5px;
+    padding:6px 12px;border-radius:999px;pointer-events:none;
+    box-shadow:0 6px 16px rgba(0,0,0,.08);
+  }
+  .s1{top:16px;left:16px;background:#fff;color:#ff5c7a;border:2px dashed #ffc2cf;transform:rotate(-6deg)}
+  .s2{bottom:16px;right:16px;background:#6c7bff;color:#fff;transform:rotate(5deg)}
+  .side{padding:22px 20px;display:flex;flex-direction:column;gap:16px;border-left:1px solid var(--line);background:#fcfbff}
+  @media(max-width:760px){.side{border-left:none;border-top:1px solid var(--line)}}
+  .side h2{font-size:13px;margin:0;color:#5a5470}
+  .desc{font-size:12px;line-height:1.8;color:#8a84a0;margin:0}
+  .kv{display:flex;justify-content:space-between;align-items:center;font-size:12px;
+    padding:9px 12px;background:#fff;border:1px solid var(--line);border-radius:12px}
+  .kv b{font-variant-numeric:tabular-nums;font-size:12px;color:#44408a}
+  .bar{height:6px;border-radius:99px;background:#eee9f7;overflow:hidden;margin-top:6px}
+  .bar>i{display:block;height:100%;width:0;border-radius:99px;
+    background:linear-gradient(90deg,#ffb36b,#ff5c7a);transition:width .08s linear}
+  .faceTag{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;
+    padding:7px 14px;border-radius:999px;background:#eef0ff;color:#4b53c9;width:max-content}
+  .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto}
+  button{
+    font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;border:none;border-radius:12px;
+    padding:9px 14px;background:#f0edff;color:#5a53a0;transition:.15s;
+  }
+  button:hover{transform:translateY(-1px);background:#e6e0ff}
+  button.primary{background:linear-gradient(135deg,#ff7d97,#ff5c7a);color:#fff;box-shadow:0 8px 18px #ff5c7a44}
+  .legend{font-size:11px;color:#a09ab4;line-height:1.7}
+  .legend code{background:#f2eefb;padding:1px 5px;border-radius:5px;color:#6a5fb0}
+  footer{margin-top:16px;font-size:11px;color:#a8a2b8}
+  .loading{position:absolute;inset:0;display:grid;place-items:center;font-size:13px;color:#9a90b8;z-index:5;background:#fcfbffdd}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">🧸</div>
+    <h1>Kian · 会 Q 弹的大头照<small>STRETCHY FACE / WEBGL INTERACTION</small></h1>
+    <span class="pill">按住脸 → 拖一拖 → 松手回弹 🥲</span>
+  </header>
+
+  <div class="stage">
+    <div class="canvasZone" id="zone">
+      <span class="sticker s1">拽我！</span>
+      <span class="sticker s2">Q 弹回位 ✨</span>
+      <div class="loading" id="loading">正在加载表情素材…</div>
+      <canvas id="gl" width="1024" height="1024"></canvas>
+    </div>
+    <aside class="side">
+      <h2>交互状态 / LIVE</h2>
+      <p class="desc">在左脸任意位置按下并拖动，附近的皮肤会被柔软地拉扯；松手后网格用阻尼弹簧回弹，抓取处逐渐泛红并在回弹时达到最红。</p>
+      <div class="kv"><span>当前状态</span><b id="stState">待机</b></div>
+      <div class="kv"><span>当前表情</span><b id="stFace">自然</b></div>
+      <div class="kv"><span>最大形变</span><b id="stDisp">0.000</b></div>
+      <div>
+        <div class="kv" style="border:none;padding-bottom:0;background:none"><span>红晕强度</span><b id="stBlush">0%</b></div>
+        <div class="bar"><i id="blushBar"></i></div>
+      </div>
+      <div class="faceTag" id="faceTag">😐 自然表情</div>
+      <div class="btns">
+        <button class="primary" id="btnReset">重置</button>
+        <button id="btnPoke">戳一下 🥲</button>
+      </div>
+      <p class="legend">
+        皮肤级红晕在 <code>纹理坐标</code> 中计算，跟随网格一起变形；被 <code>皮肤遮罩 × alpha</code> 双重限制，不会浮在屏幕上。表情素材已统一轮廓，切换不跳动。
+      </p>
+    </aside>
+  </div>
+  <footer>WebGL · 细分三角网格 · 阻尼弹簧 · Pointer Capture · 纹理坐标泛红 —— Kian 的交互实验</footer>
+</div>
+
+<script src="stretch_textures.js"></script>
+<script>
+/* =========================================================================
+   Kian 可拉扯 / Q 弹回位 / 皮肤泛红 交互大头照
+   坐标系约定（全部用「显示空间」归一化 [0,1]²，(0,0)=左上）：
+     - 网格顶点静止位置 rest = (nx, ny)
+     - 纹理坐标 uv = (nx, 1-ny)  （配合 UNPACK_FLIP_Y_WEBGL，uv.v=1 对应图片顶部）
+     - clip = (2*nx-1, 1-2*ny)
+   变形：每个顶点保存 disp(显示空间位移)、vel；物理用朝目标的阻尼弹簧积分。
+   ========================================================================= */
+(function(){
+"use strict";
+
+const DIR   = "final_transparent/";
+const TEXSRC = (window.STRETCH_TEX && window.STRETCH_TEX.neutral) ? window.STRETCH_TEX : {
+  neutral:    DIR + "01_自然表情.png",
+  surprised:  DIR + "04_惊讶O型嘴.png",
+  pain:       DIR + "07_吃痛.png",
+  mask:       "mask.png"
+};
+const IMGS  = TEXSRC;
+
+// ---- 网格与物理参数 ----
+const N = 60;                 // 每行/列顶点数 → 60×60 细分网格，插值更细腻
+const SIGMA = 0.22;           // 抓取影响半径（高斯），局部化且梯度平缓，避免整图平移
+// 不翻折判据：|drag|·max|∇w| = |drag|·0.6065/SIGMA 必须 < 1
+// 0.18·0.6065/0.22 ≈ 0.50 << 1 → 三角形不会被压缩翻转，皮肤柔软不撕裂
+const MAX_DRAG = 0.18;        // 拖拽向量上限，防翻折/裂缝/裁切
+const K = 205, C = 16.5;      // 弹簧刚度 / 阻尼（欠阻尼 → 轻微摆动）
+const SUBSTEP = 1/140;        // 物理固定子步，保证快速操作稳定
+const DEFORM_EPS = 0.0018;    // "实际发生拖拽变形" 的最小位移（再短也算）
+const FADE_RATE = 0.30;       // 红晕缓慢消退速度 /秒
+
+const canvas = document.getElementById("gl");
+const zone   = document.getElementById("zone");
+const gl = canvas.getContext("webgl", {
+  alpha:true, premultipliedAlpha:false, antialias:true, preserveDrawingBuffer:true
+}) || canvas.getContext("experimental-webgl", {alpha:true, premultipliedAlpha:false});
+if(!gl){ document.getElementById("loading").textContent="当前浏览器不支持 WebGL 😢"; return; }
+
+/* ------------------------- Shader ------------------------- */
+const VS = `
+precision highp float;
+attribute vec2 a_clip;
+attribute vec2 a_uv;
+varying vec2 v_uv;
+void main(){ v_uv = a_uv; gl_Position = vec4(a_clip, 0.0, 1.0); }
+`;
+const FS = `
+precision highp float;
+varying vec2 v_uv;
+uniform sampler2D u_face;
+uniform sampler2D u_mask;
+uniform vec2  u_blushUV;   // 抓取点（纹理坐标，固定）
+uniform float u_blush;     // 0..1 红晕强度
+void main(){
+  vec4 base = texture2D(u_face, v_uv);
+  if(base.a < 0.004) discard;                 // 透明处不绘制，边缘干净
+  float skin = texture2D(u_mask, v_uv).r;    // 皮肤区域遮罩
+  float d = distance(v_uv, u_blushUV);
+  float grad = smoothstep(0.21, 0.0, d);     // 柔和渐变，中心强边缘弱
+  grad = pow(grad, 1.6);
+  float b = u_blush * grad * skin * base.a;  // 受 alpha + 皮肤遮罩限制
+  // 保留皮肤纹理：基于原色的色调偏移（提红、轻压绿蓝），不做纯色圆覆盖
+  vec3 target;
+  target.r = min(1.0, base.r * 1.32 + 0.045);
+  target.g = base.g * 0.82;
+  target.b = base.b * 0.80;
+  vec3 col = mix(base.rgb, target, clamp(b * 0.72, 0.0, 1.0));
+  gl_FragColor = vec4(col, base.a);
+}
+`;
+function compile(type, src){
+  const s = gl.createShader(type);
+  gl.shaderSource(s, src); gl.compileShader(s);
+  if(!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+  return s;
+}
+const prog = gl.createProgram();
+gl.attachShader(prog, compile(gl.VERTEX_SHADER, VS));
+gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, FS));
+gl.linkProgram(prog);
+if(!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
+gl.useProgram(prog);
+const aClip = gl.getAttribLocation(prog, "a_clip");
+const aUV   = gl.getAttribLocation(prog, "a_uv");
+const uFace = gl.getUniformLocation(prog, "u_face");
+const uMask = gl.getUniformLocation(prog, "u_mask");
+const uBlushUV  = gl.getUniformLocation(prog, "u_blushUV");
+const uBlush    = gl.getUniformLocation(prog, "u_blush");
+
+/* ------------------------- 网格数据 ------------------------- */
+const VCOUNT = N*N;
+const clipArr = new Float32Array(VCOUNT*2);   // 每帧更新（变形后）
+const uvArr   = new Float32Array(VCOUNT*2);   // 静态
+const disp    = new Float32Array(VCOUNT*2);   // 当前位移（显示空间）
+const vel     = new Float32Array(VCOUNT*2);   // 速度
+const restNX  = new Float32Array(VCOUNT);
+const restNY  = new Float32Array(VCOUNT);
+const weight  = new Float32Array(VCOUNT);     // 当前抓取的高斯权重
+let idx = 0;
+for(let j=0;j<N;j++){
+  for(let i=0;i<N;i++,idx++){
+    const nx = i/(N-1), ny = j/(N-1);
+    restNX[idx]=nx; restNY[idx]=ny;
+    uvArr[idx*2]=nx; uvArr[idx*2+1]=1-ny;
+    clipArr[idx*2]=2*nx-1; clipArr[idx*2+1]=1-2*ny;
+  }
+}
+// 索引
+const indexArr = new Uint16Array((N-1)*(N-1)*6);
+let p=0;
+for(let j=0;j<N-1;j++){
+  for(let i=0;i<N-1;i++){
+    const a=j*N+i, b=a+1, c=a+N, d=c+1;
+    indexArr[p++]=a; indexArr[p++]=c; indexArr[p++]=b;
+    indexArr[p++]=b; indexArr[p++]=c; indexArr[p++]=d;
+  }
+}
+const clipBuf = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, clipBuf);
+gl.bufferData(gl.ARRAY_BUFFER, clipArr, gl.DYNAMIC_DRAW);
+gl.enableVertexAttribArray(aClip);
+gl.vertexAttribPointer(aClip, 2, gl.FLOAT, false, 0, 0);
+const uvBuf = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, uvBuf);
+gl.bufferData(gl.ARRAY_BUFFER, uvArr, gl.STATIC_DRAW);
+gl.enableVertexAttribArray(aUV);
+gl.vertexAttribPointer(aUV, 2, gl.FLOAT, false, 0, 0);
+const idxBuf = gl.createBuffer();
+gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, idxBuf);
+gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexArr, gl.STATIC_DRAW);
+
+gl.disable(gl.DEPTH_TEST);
+gl.clearColor(0,0,0,0);
+
+/* ------------------------- 纹理 ------------------------- */
+const tex = {};
+function loadTexture(url, unit){
+  return new Promise((res, rej)=>{
+    const im = new Image();
+    im.onload = ()=>{
+      try{
+        const t = gl.createTexture();
+        gl.activeTexture(gl.TEXTURE0 + unit);
+        gl.bindTexture(gl.TEXTURE_2D, t);
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+        gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, im);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        res(t);
+      }catch(err){ rej(new Error("纹理上传失败 "+url+" : "+err.message)); }
+    };
+    im.onerror = ()=>rej(new Error("加载失败: "+url));
+    im.src = url;
+  });
+}
+
+/* ------------------------- 交互状态 ------------------------- */
+const S = {
+  grabbed:false, pointerId:null,
+  startX:0, startY:0,      // pointerdown 屏幕坐标（固定）
+  grabNX:0.5, grabNY:0.5,  // 抓取点（显示空间）
+  blushUV:[0.5,0.5],       // 抓取点（纹理坐标，固定）
+  dragX:0, dragY:0,        // clamp 后的拖拽向量（显示空间）
+  didDeform:false,         // 本次抓取是否真的发生了变形
+  blushVal:0, phase:"idle",// idle / rising / fade
+  face:"neutral",
+  maxDisp:0, maxVel:0,
+  loaded:false
+};
+
+function rect(){ return canvas.getBoundingClientRect(); }
+function toNorm(clientX, clientY){
+  const r = rect();
+  return [ (clientX-r.left)/r.width, (clientY-r.top)/r.height ];
+}
+function computeWeights(){
+  const inv = 1/(2*SIGMA*SIGMA);
+  for(let v=0; v<VCOUNT; v++){
+    const dx = restNX[v]-S.grabNX, dy = restNY[v]-S.grabNY;
+    weight[v] = Math.exp(-(dx*dx+dy*dy)*inv);
+  }
+}
+function clampDrag(x,y){
+  const len = Math.hypot(x,y);
+  if(len>MAX_DRAG){ const s=MAX_DRAG/len; return [x*s,y*s]; }
+  return [x,y];
+}
+
+function beginGrab(clientX, clientY, pointerId){
+  const [nx,ny] = toNorm(clientX, clientY);
+  S.grabbed = true; S.pointerId = pointerId;
+  S.startX = clientX; S.startY = clientY;
+  S.grabNX = nx; S.grabNY = ny;
+  S.blushUV = [nx, 1-ny];    // 新拖拽 → 替换上一处红晕
+  S.dragX = 0; S.dragY = 0;
+  S.didDeform = false;
+  S.blushVal = 0; S.phase = "idle";
+  computeWeights();
+  canvas.classList.add("grabbing");
+}
+function moveGrab(clientX, clientY){
+  if(!S.grabbed) return;
+  const r = rect();
+  let dx = (clientX - S.startX)/r.width;
+  let dy = (clientY - S.startY)/r.height;
+  [dx,dy] = clampDrag(dx,dy);
+  S.dragX = dx; S.dragY = dy;
+  if(Math.hypot(dx,dy) > DEFORM_EPS) S.didDeform = true;  // 再短再快也算
+}
+function endGrab(){
+  if(!S.grabbed) return;
+  const ldx = S.dragX, ldy = S.dragY;   // 记录最后拖拽向量（清零前）
+  S.grabbed = false; S.pointerId = null;
+  S.dragX = 0; S.dragY = 0;      // 目标归零 → 弹簧回弹
+  if(S.didDeform){
+    // 极快拖拽（同一渲染帧内 down→move→up）时物理还没跑过一帧，网格来不及变形。
+    // 注入一个与最后拖拽方向一致的小位移，保证"再快也能看到一次 Q 弹回位"。
+    if(S.maxDisp < 0.0012){
+      for(let v=0; v<VCOUNT; v++){
+        const w = weight[v], k2=v*2;
+        disp[k2]   = ldx * w * 0.9;
+        disp[k2+1] = ldy * w * 0.9;
+        vel[k2]=0; vel[k2+1]=0;
+      }
+    }
+    S.blushVal = 1.0; S.phase = "fade"; // 松手瞬间最红（回弹阶段），随后缓慢消退
+  } else { S.blushVal = 0; S.phase = "idle"; }
+  canvas.classList.remove("grabbing");
+}
+function hardReset(){
+  S.grabbed=false; S.pointerId=null; S.dragX=S.dragY=0;
+  S.didDeform=false; S.blushVal=0; S.phase="idle"; S.face="neutral";
+  disp.fill(0); vel.fill(0);
+  canvas.classList.remove("grabbing");
+}
+
+/* ---- Pointer events：capture 保证移出元素仍能完成拖拽 ---- */
+canvas.addEventListener("pointerdown", (e)=>{
+  if(!S.loaded) return;
+  e.preventDefault();
+  try{ canvas.setPointerCapture(e.pointerId); }catch(_){/* 合成事件可能无真实 pointer */}
+  beginGrab(e.clientX, e.clientY, e.pointerId);
+});
+window.addEventListener("pointermove", (e)=>{
+  if(S.grabbed && (S.pointerId===null || e.pointerId===S.pointerId)) moveGrab(e.clientX, e.clientY);
+}, {passive:true});
+window.addEventListener("pointerup",     (e)=>{ if(S.grabbed && e.pointerId===S.pointerId) endGrab(); });
+window.addEventListener("pointercancel", ()=>endGrab());
+window.addEventListener("lostpointercapture", ()=>{ if(S.grabbed) endGrab(); });
+// 失焦 / 切换标签页：正确清理交互状态
+window.addEventListener("blur", ()=>endGrab());
+document.addEventListener("visibilitychange", ()=>{ if(document.hidden) endGrab(); });
+
+/* ------------------------- 物理（固定子步） ------------------------- */
+function physics(h){
+  const g = S.grabbed;
+  const dx = S.dragX, dy = S.dragY;
+  for(let v=0; v<VCOUNT; v++){
+    const k2=v*2;
+    let tx=0, ty=0;
+    if(g){ const w=weight[v]; tx=dx*w; ty=dy*w; }
+    const fx = (tx-disp[k2])*K   - vel[k2]*C;
+    const fy = (ty-disp[k2+1])*K - vel[k2+1]*C;
+    vel[k2]   += fx*h; vel[k2+1] += fy*h;
+    disp[k2]  += vel[k2]*h; disp[k2+1] += vel[k2+1]*h;
+  }
+}
+function updateClipAndStats(){
+  let mD=0, mV=0;
+  for(let v=0; v<VCOUNT; v++){
+    const k2=v*2;
+    const nx = restNX[v]+disp[k2], ny = restNY[v]+disp[k2+1];
+    clipArr[k2]   = 2*nx-1;
+    clipArr[k2+1] = 1-2*ny;
+    const ad = Math.abs(disp[k2])+Math.abs(disp[k2+1]);
+    const av = Math.abs(vel[k2])+Math.abs(vel[k2+1]);
+    if(ad>mD) mD=ad; if(av>mV) mV=av;
+  }
+  S.maxDisp = mD; S.maxVel = mV;
+  gl.bindBuffer(gl.ARRAY_BUFFER, clipBuf);
+  gl.bufferSubData(gl.ARRAY_BUFFER, 0, clipArr);
+  // 非抓取、非上升期且稳定 → 彻底归零，杜绝浮点漂移 / 残留变形（fade 中也可归零，红晕独立计时）
+  if(!S.grabbed && S.phase!=="rising" && mD<0.00012 && mV<0.0012){
+    disp.fill(0); vel.fill(0);
+    for(let v=0; v<VCOUNT; v++){
+      clipArr[v*2]=2*restNX[v]-1; clipArr[v*2+1]=1-2*restNY[v];
+    }
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, clipArr);
+  }
+}
+
+/* ------------------------- 红晕 / 表情 时间线 ------------------------- */
+function updateBlush(dt){
+  if(S.grabbed && S.didDeform){
+    // 拖拽中：逐渐泛红（距离越大越红）
+    const goal = 0.5 + 0.5*Math.min(1, Math.hypot(S.dragX,S.dragY)/0.14);
+    S.blushVal += (goal - S.blushVal) * Math.min(1, dt*3.4);
+    S.phase = "rising";
+  } else if(S.phase==="fade"){
+    S.blushVal -= dt*FADE_RATE;            // 缓慢消退
+    if(S.blushVal<=0){ S.blushVal=0; S.phase="idle"; }
+  } else if(!S.grabbed){
+    S.blushVal = 0; S.phase = "idle";      // 待机：不触发红晕
+  }
+}
+function updateFace(){
+  // 拉扯量：抓握中用拖拽量，回弹中用实际形变量
+  const level = Math.max(S.grabbed ? Math.hypot(S.dragX,S.dragY) : 0, S.maxDisp*0.85);
+  // 滞回阈值，避免临界抖动
+  const A=0.16, a=0.115, B=0.052, b=0.032;
+  let want = S.face;
+  if(level>A) want="pain";
+  else if(level>B && (S.face==="pain" ? level>a : true)) want = (level>a && S.face==="pain") ? "pain" : "surprised";
+  else if(level<b) want="neutral";
+  else if(S.face==="pain" && level<a) want="surprised";
+  S.face = want;
+}
+
+/* ------------------------- 渲染 ------------------------- */
+function render(){
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.useProgram(prog);
+  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tex[S.face]);
+  gl.uniform1i(uFace, 0);
+  gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, tex.mask);
+  gl.uniform1i(uMask, 1);
+  gl.uniform2f(uBlushUV, S.blushUV[0], S.blushUV[1]);
+  gl.uniform1f(uBlush, S.blushVal);
+  gl.bindBuffer(gl.ARRAY_BUFFER, clipBuf);
+  gl.enableVertexAttribArray(aClip); gl.vertexAttribPointer(aClip,2,gl.FLOAT,false,0,0);
+  gl.bindBuffer(gl.ARRAY_BUFFER, uvBuf);
+  gl.enableVertexAttribArray(aUV); gl.vertexAttribPointer(aUV,2,gl.FLOAT,false,0,0);
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, idxBuf);
+  gl.drawElements(gl.TRIANGLES, indexArr.length, gl.UNSIGNED_SHORT, 0);
+}
+
+/* ------------------------- HUD ------------------------- */
+const FACE_CN = {neutral:"自然", surprised:"惊讶 O 型嘴", pain:"吃痛"};
+const FACE_EMOJI = {neutral:"😐 自然表情", surprised:"😮 惊讶 O 型嘴", pain:"😣 吃痛"};
+let hudT=0;
+function updateHUD(now){
+  if(now-hudT<60) return; hudT=now;
+  document.getElementById("stState").textContent =
+    S.grabbed ? (S.didDeform?"拉扯中 🥲":"按住中") : (S.phase==="fade"?"回弹泛红":"待机");
+  document.getElementById("stFace").textContent = FACE_CN[S.face];
+  document.getElementById("stDisp").textContent = S.maxDisp.toFixed(3);
+  const pct = Math.round(S.blushVal*100);
+  document.getElementById("stBlush").textContent = pct+"%";
+  document.getElementById("blushBar").style.width = pct+"%";
+  document.getElementById("faceTag").textContent = FACE_EMOJI[S.face];
+}
+
+/* ------------------------- 主循环 ------------------------- */
+let last = performance.now();
+function frame(now){
+  let dt = (now-last)/1000; last=now;
+  if(dt>0.05) dt=0.05;           // 切标签页回来不炸
+  if(dt<0) dt=0;
+  const steps = Math.max(1, Math.ceil(dt/SUBSTEP));
+  const h = dt/steps;
+  for(let s=0;s<steps;s++) physics(h);
+  updateClipAndStats();
+  updateBlush(dt);
+  updateFace();
+  render();
+  updateHUD(now);
+  requestAnimationFrame(frame);
+}
+
+/* ------------------------- 按钮 / 测试接口 ------------------------- */
+document.getElementById("btnReset").addEventListener("click", hardReset);
+document.getElementById("btnPoke").addEventListener("click", ()=>{
+  // 演示一次快速短拉（也便于验证"再短也泛红"）
+  const r = rect();
+  const cx = r.left + r.width*0.5, cy = r.top + r.height*0.62;
+  hardReset();
+  beginGrab(cx, cy, 999);
+  moveGrab(cx + r.width*0.11, cy - r.height*0.05);
+  setTimeout(()=>{
+    moveGrab(cx + r.width*0.16, cy - r.height*0.08);
+    endGrab();
+  }, 130);
+});
+
+// 自动化测试接口
+window.__stretch = {
+  state: ()=>({
+    loaded:S.loaded, grabbed:S.grabbed, didDeform:S.didDeform,
+    blushVal:+S.blushVal.toFixed(3), phase:S.phase, face:S.face,
+    blushUV:[+S.blushUV[0].toFixed(3), +S.blushUV[1].toFixed(3)],
+    maxDisp:+S.maxDisp.toFixed(4), maxVel:+S.maxVel.toFixed(4),
+    drag:[+S.dragX.toFixed(3), +S.dragY.toFixed(3)],
+    finite: Number.isFinite(S.maxDisp) && Number.isFinite(S.blushVal)
+  }),
+  fire: (type, nx, ny, pid)=>{
+    const r = rect();
+    const ev = new PointerEvent(type, {
+      pointerId: pid||1, pointerType:"mouse", isPrimary:true, bubbles:true, cancelable:true,
+      clientX: r.left + nx*r.width, clientY: r.top + ny*r.height
+    });
+    (type==="pointerdown" ? canvas : window).dispatchEvent(ev);
+  },
+  reset: hardReset,
+  endGrab: endGrab
+};
+
+/* ------------------------- 启动 ------------------------- */
+Promise.all([
+  loadTexture(IMGS.neutral,   0),
+  loadTexture(IMGS.surprised, 0),
+  loadTexture(IMGS.pain,      0),
+  loadTexture(IMGS.mask,      0)
+]).then(([tN,tS,tP,tM])=>{
+  tex.neutral=tN; tex.surprised=tS; tex.pain=tP; tex.mask=tM;
+  S.loaded = true;
+  document.getElementById("loading").style.display="none";
+  requestAnimationFrame((t)=>{ last=t; frame(t); });
+}).catch(err=>{
+  document.getElementById("loading").textContent = "素材加载失败：" + err.message;
+  console.error(err);
+});
+
+})();
+</script>
+</body>
+</html>
