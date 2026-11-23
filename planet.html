@@ -131,7 +131,7 @@ renderer.toneMappingExposure=1.0;
 document.body.appendChild(renderer.domElement);
 
 const scene=new THREE.Scene();
-scene.background=new THREE.Color(0xffffff);
+scene.background=new THREE.Color(/[?&]embed=1/.test(location.search)?0xF3EFE6:0xffffff);
 
 const camera=new THREE.PerspectiveCamera(42,window.innerWidth/window.innerHeight,0.1,60);
 
@@ -1189,7 +1189,18 @@ const uiCss=`
   #wc{left:10px;right:10px;bottom:10px;width:auto}
   #wc .wc-img{height:150px}
   #hint{bottom:12px;font-size:11px}
-}`;
+}
+/* iframe 内嵌模式：只留 3D 画面，UI 让位给外层展示框 */
+body.embed{background:#F3EFE6}
+body.embed #hint{display:none}
+body.embed #wc{width:min(280px,78vw);right:10px;bottom:10px;border-radius:14px}
+body.embed #wc .wc-img{height:104px}
+body.embed #wc .wc-body{padding:10px 12px 12px}
+body.embed #wc h3{font-size:14px}
+body.embed #wc .wc-d{font-size:11px;line-height:1.5;max-height:46px;overflow:hidden}
+body.embed #wc .wc-open{display:none}
+body.embed #wtoast{bottom:56px;font-size:11px}
+`;
 const uiStyle=document.createElement('style');
 uiStyle.textContent=uiCss;
 document.head.appendChild(uiStyle);
@@ -1214,6 +1225,7 @@ document.body.insertAdjacentHTML('beforeend',`
 <div id="wtoast"></div>
 <div id="hint">🖱️ 拖动旋转 · 滚轮缩放 · 点空地行走 · 点作品看详情 · 双击直达作品页</div>
 `);
+if(/[?&]embed=1/.test(location.search)) document.body.classList.add('embed');
 const wc=document.getElementById('wc');
 let cardLM=-1;
 function openCard(i){
